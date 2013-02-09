@@ -7,14 +7,14 @@
 //
 //  https://github.com/danparsons/DPHue
 
-#import "DPHue.h"
+#import "DPHueBridge.h"
 #import "DPHueLight.h"
 #import "DPJSONConnection.h"
 #import "NSString+MD5.h"
 #import "WSLog.h"
 #import <CocoaAsyncSocket/GCDAsyncSocket.h>
 
-@interface DPHue ()
+@interface DPHueBridge ()
 @property (nonatomic, strong, readwrite) NSString *name;
 @property (nonatomic, strong, readwrite) NSString *deviceType;
 @property (nonatomic, strong, readwrite) NSURL *readURL;
@@ -27,7 +27,7 @@
 
 @end
 
-@implementation DPHue
+@implementation DPHueBridge
 
 - (id)initWithHueHost:(NSString *)host username:(NSString *)username {
     self = [super init];
@@ -40,7 +40,7 @@
     return self;
 }
 
-- (void)readWithCompletion:(void (^)(DPHue *, NSError *))block {
+- (void)readWithCompletion:(void (^)(DPHueBridge *, NSError *))block {
     NSURLRequest *req = [NSURLRequest requestWithURL:self.readURL];
     DPJSONConnection *connection = [[DPJSONConnection alloc] initWithRequest:req];
     connection.completionBlock = block;
