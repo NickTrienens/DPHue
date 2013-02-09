@@ -9,9 +9,9 @@
 
 #import <Foundation/Foundation.h>
 #import <CocoaAsyncSocket/GCDAsyncSocket.h>
-#import "DPJSONSerializable.h"
+#import "DPHueObject.h"
 
-@interface DPHueBridge : NSObject <DPJSONSerializable, NSCoding, GCDAsyncSocketDelegate>
+@interface DPHueBridge : DPHueObject <GCDAsyncSocketDelegate>
 
 // Properties you may be interested in setting
 
@@ -23,13 +23,10 @@
 @property (nonatomic, strong) NSString *host;
 
 
-
 // Properties you may be interested in reading
 
 // The "name" of the Hue controller, as returned by the API
-// This can actually be changed via the Hue API if necessary,
-// but I didn't implement that feature.
-@property (nonatomic, strong, readonly) NSString *name;
+@property (nonatomic, strong) NSString *name;
 
 // Firmware version
 @property (nonatomic, strong, readonly) NSString *swversion;

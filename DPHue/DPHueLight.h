@@ -9,8 +9,9 @@
 
 #import <Foundation/Foundation.h>
 #import "DPJSONSerializable.h"
+#import "DPHueObject.h"
 
-@interface DPHueLight : NSObject <DPJSONSerializable, NSCoding>
+@interface DPHueLight : DPHueObject <DPJSONSerializable, NSCoding>
 
 // Properties you may be interested in setting
 // Setting these values does not actually update the Hue
@@ -49,12 +50,10 @@
 // If set to YES, changes are held until [DPHueLight write] is called.
 @property (nonatomic) BOOL holdUpdates;
 
+// Lamp name, as returned by the controller.
+@property (nonatomic, strong) NSString *name;
 
 // Properties you may be interested in reading
-
-// Lamp name, as returned by the controller. The API allows for changing
-// this, but I haven't implemented that feature.
-@property (nonatomic, strong, readonly) NSString *name;
 
 // The API does not allow changing this value directly. Rather, the color
 // mode of a lamp is determined by the last color value type it was given.
@@ -77,22 +76,6 @@
 
 // Lamp model ID.
 @property (nonatomic, strong, readonly) NSString *modelid;
-
-
-// Properties you can probably ignore
-@property (nonatomic, strong, readonly) NSURL *readURL;
-@property (nonatomic, strong, readonly) NSURL *writeURL;
-@property (nonatomic, strong) NSString *username;
-@property (nonatomic, strong) NSString *host;
-
-// Re-download & parse controller's state for this particular light
-- (void)read;
-
-// Write only pending changes to controller
-- (void)write;
-
-// Write entire state to controller, regardless of changes
-- (void)writeAll;
 
 // To be implemented later
 /*- (void)flashOnce;

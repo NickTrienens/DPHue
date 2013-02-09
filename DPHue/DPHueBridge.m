@@ -14,8 +14,12 @@
 #import "WSLog.h"
 #import <CocoaAsyncSocket/GCDAsyncSocket.h>
 
+#import "DPHueConfig.h"
+
 @interface DPHueBridge ()
-@property (nonatomic, strong, readwrite) NSString *name;
+
+@property (nonatomic, strong, readwrite) DPHueConfig *config;
+
 @property (nonatomic, strong, readwrite) NSString *deviceType;
 @property (nonatomic, strong, readwrite) NSURL *readURL;
 @property (nonatomic, strong, readwrite) NSURL *writeURL;
@@ -32,10 +36,12 @@
 - (id)initWithHueHost:(NSString *)host username:(NSString *)username {
     self = [super init];
     if (self) {
-        self.deviceType = @"QuickHue";
+        self.deviceType = @"DPHue";
         self.authenticated = NO;
         self.host = host;
         self.username = username;
+        
+        self.config = [[DPHueConfig alloc] initWithBridge:self];
     }
     return self;
 }
@@ -97,33 +103,25 @@
     }
 }
 
+#pragma mark - Writable properties
+
+- (void)setName:(NSString *)name
+{
+    _name = name;
+    self.config.pendingChanges[@"name"] = _name;
+    [self.config write];
+}
+
 - (void)writeAll {
+    [self.config writeAll];
+    
     for (DPHueLight *light in self.lights)
         [light writeAll];
 }
 
-// Sets _readURL and _writeURL based on _hostname, for the
-// controller and all the lights managed by this controller.
-- (void)updateURLs {
-    _readURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/api/%@", self.host, self.username]];
-    _writeURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/api/%@/config", self.host, self.username]];
-    
-    // As each DPHueLight maintains its own access URLs, they
-    // too must be updated if URLs change.
-    for (DPHueLight *light in self.lights) {
-        light.host = self.host;
-        light.username = self.username;
-    }
-}
-
-- (void)setUsername:(NSString *)username {
-    _username = username;
-    [self updateURLs];
-}
-
-- (void)setHost:(NSString *)host {
-    _host = host;
-    [self updateURLs];
+- (NSURL *)readURL
+{
+    return [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/api/%@", self.host, self.username]];
 }
 
 - (void)triggerTouchlinkWithCompletion:(void (^)(BOOL success, NSString *))block {
@@ -187,19 +185,18 @@
         _authenticated = NO;
         return;
     }
-    _name = d[@"config"][@"name"];
-    if (_name)
+
+    if (d[@"config"][@"name"])
         _authenticated = YES;
     _swversion = d[@"config"][@"swversion"];
     NSMutableArray *tmpLights = [[NSMutableArray alloc] init];
     for (id lightItem in d[@"lights"]) {
-        DPHueLight *light = [[DPHueLight alloc] init];
+        DPHueLight *light = [[DPHueLight alloc] initWithBridge:self];
         [light readFromJSONDictionary:d[@"lights"][lightItem]];
         NSNumberFormatter *f = [[NSNumberFormatter alloc] init];
         f.numberStyle = NSNumberFormatterDecimalStyle;
         light.number = [f numberFromString:lightItem];
-        light.username = self.username;
-        light.host = self.host;
+
         [tmpLights addObject:light];
     }
     _lights = tmpLights;
@@ -210,7 +207,7 @@
 - (id)initWithCoder:(NSCoder *)a {
     self = [super init];
     if (self) {
-        _deviceType = @"QuickHue";
+        _deviceType = @"DPHue";
         _username = [a decodeObjectForKey:@"username"];
         _host = [a decodeObjectForKey:@"host"];
         _readURL = [a decodeObjectForKey:@"getURL"];
