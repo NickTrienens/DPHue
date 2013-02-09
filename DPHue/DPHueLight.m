@@ -92,15 +92,19 @@
 }
 
 - (void)setBrightness:(NSNumber *)brightness {
-    _brightness = brightness;
-    self.pendingChanges[@"bri"] = brightness;
+    brightness = [brightness isGreaterThan:@255] ? @255 : brightness;
+    brightness = [brightness isLessThan:@0] ? @0 : brightness;
+    _brightness = @([brightness integerValue]);
+    self.pendingChanges[@"bri"] = _brightness;
     if (!self.holdUpdates)
         [self write];
 }
 
 - (void)setHue:(NSNumber *)hue {
-    _hue = hue;
-    self.pendingChanges[@"hue"] = hue;
+    hue = [hue isGreaterThan:@65535] ? @65535 : hue;
+    hue = [hue isLessThan:@0] ? @0 : hue;
+    _hue = @([hue integerValue]);
+    self.pendingChanges[@"hue"] = _hue;
     if (!self.holdUpdates)
         [self write];
 }
@@ -114,15 +118,19 @@
 }
 
 - (void)setColorTemperature:(NSNumber *)colorTemperature {
-    _colorTemperature = colorTemperature;
-    self.pendingChanges[@"ct"] = colorTemperature;
+    colorTemperature = [colorTemperature isGreaterThan:@500] ? @500 : colorTemperature;
+    colorTemperature = [colorTemperature isLessThan:@154] ? @154 : colorTemperature;
+    _colorTemperature = @([colorTemperature integerValue]);
+    self.pendingChanges[@"ct"] = _colorTemperature;
     if (!self.holdUpdates)
         [self write];
 }
 
 - (void)setSaturation:(NSNumber *)saturation {
-    _saturation = saturation;
-    self.pendingChanges[@"sat"] = saturation;
+    saturation = [saturation isGreaterThan:@255] ? @255 : saturation;
+    saturation = [saturation isLessThan:@0] ? @0 : saturation;
+    _saturation = @([saturation integerValue]);
+    self.pendingChanges[@"sat"] = _saturation;
     if (!self.holdUpdates)
         [self write];
 }
