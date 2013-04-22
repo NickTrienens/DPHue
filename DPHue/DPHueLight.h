@@ -19,6 +19,8 @@
 // (unless self.holdUpdates is set to NO, then changes are
 // immediate).
 
+@property (nonatomic, strong) NSColor *color;
+
 // Lamp brightness, valid values are 0 - 255.
 @property (nonatomic, strong) NSNumber *brightness;
 

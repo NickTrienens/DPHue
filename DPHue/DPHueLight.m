@@ -76,6 +76,18 @@
         [self.state write];
 }
 
+- (void)setColor:(NSColor *)color {
+    BOOL holdUpdates = self.holdUpdates;
+    _holdUpdates = YES;
+    [self setHue:[NSNumber numberWithDouble:[color hueComponent] * 65535]];
+    [self setSaturation:[NSNumber numberWithDouble:[color saturationComponent] * 255]];
+    [self setBrightness:[NSNumber numberWithDouble:[color brightnessComponent] * 255]];
+    _color = color;
+    _holdUpdates = holdUpdates;
+    if (!self.holdUpdates)
+        [self.state write];
+}
+
 - (void)setBrightness:(NSNumber *)brightness {
     brightness = [brightness isGreaterThan:@255] ? @255 : brightness;
     brightness = [brightness isLessThan:@0] ? @0 : brightness;
@@ -172,6 +184,7 @@
         _xy = d[@"state"][@"xy"];
         _colorTemperature = d[@"state"][@"ct"] ?: _colorTemperature;
         _saturation = d[@"state"][@"sat"] ?: _saturation;
+        _color = [NSColor colorWithDeviceHue:([_hue integerValue]/65535.0) saturation:([_saturation integerValue]/255.0) brightness:([_brightness integerValue]/255.0) alpha:1.0];
     }
 }
 
@@ -194,6 +207,7 @@
         _colorTemperature = [a decodeObjectForKey:@"colorTemperature"];
         _saturation = [a decodeObjectForKey:@"saturation"];
         _number = [a decodeObjectForKey:@"number"];
+        _color = [NSColor colorWithDeviceHue:([_hue integerValue]/65535.0) saturation:([_saturation integerValue]/255.0) brightness:([_brightness integerValue]/255.0) alpha:1.0];
     }
     return self;
 }
