@@ -179,8 +179,8 @@
         _colorMode = d[@"state"][@"colormode"] ?: _colorMode;
         _hue = d[@"state"][@"hue"] ?: _hue;
         _type = d[@"type"] ?: _type;
-        _on = [d[[@"state"][@"on"] boolValue];
-        _reachable = d[[@"state"][@"reachable"] boolValue];
+        _on = [d[@"state"][@"on"] boolValue];
+        _reachable = [d[@"state"][@"reachable"] boolValue];
         _xy = d[@"state"][@"xy"];
         _colorTemperature = d[@"state"][@"ct"] ?: _colorTemperature;
         _saturation = d[@"state"][@"sat"] ?: _saturation;
