@@ -24,6 +24,7 @@
 
 // Re-download & parse controller's state for this particular light
 - (void)read;
+- (void)readWithCompletion:(void (^)(id object, NSError *err))block;
 
 // Write only pending changes to controller
 - (void)write;

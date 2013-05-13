@@ -22,7 +22,6 @@
 // The hostname (or IP address) that DPHue will talk to.
 @property (nonatomic, strong) NSString *host;
 
-
 // Properties you may be interested in reading
 
 // The "name" of the Hue controller, as returned by the API
@@ -39,16 +38,12 @@
 @property (nonatomic, readonly) BOOL authenticated;
 
 
-
 // Properties you can probably ignore
 
 // Both getURL and putURL are automatically generated based on
 // data returned from the controller.
 // readURL is the URL that returns data (controller config, lights)
 @property (nonatomic, strong, readonly) NSURL *readURL;
-
-// writeURL is the URL that new JSON values are sent to
-@property (nonatomic, strong, readonly) NSURL *writeURL;
 
 
 // Utility method for generating a username that Hue will like
@@ -62,11 +57,6 @@
 // have to register the username with the controller. See
 // [DPHue registerUsername].
 - (id)initWithHueHost:(NSString *)host username:(NSString *)username;
-
-// Download the complete state of the Hue controller, including the state
-// of all lights. block is called when the operation is complete. This
-// normally takes only 1 to 3 seconds.
-- (void)readWithCompletion:(void (^)(DPHueBridge *hue, NSError *err))block;
 
 // This will attempt to register self.username with the Hue controller.
 // This will fail unless the physical button on the Hue controller has

@@ -95,11 +95,7 @@ NSString *const kHueUsernamePrefKey = @"HueAPIUsernamePrefKey";
 {
     [self willChangeValueForKey:@"bridges"];
     for (DPHueBridge *bridge in _bridges) {
-        [bridge readWithCompletion:^(DPHueBridge *hue, NSError *err) {
-            if (err != nil) {
-                NSLog(@"%s: %@", __PRETTY_FUNCTION__, err);
-            }
-        }];
+        [bridge read];
     }
     [self didChangeValueForKey:@"bridges"];
 }

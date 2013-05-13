@@ -21,12 +21,20 @@
 }
 
 - (NSURL *)URL {
-    return [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/api/%@/", self.bridge.host, self.bridge.username]];
+    return [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/api/%@", self.bridge.host, self.bridge.username]];
 }
 
 - (void)read {
     NSURLRequest *req = [NSURLRequest requestWithURL:self.URL];
     DPJSONConnection *connection = [[DPJSONConnection alloc] initWithRequest:req];
+    connection.jsonRootObject = self;
+    [connection start];
+}
+
+- (void)readWithCompletion:(void (^)(id object, NSError *err))block {
+    NSURLRequest *req = [NSURLRequest requestWithURL:self.URL];
+    DPJSONConnection *connection = [[DPJSONConnection alloc] initWithRequest:req];
+    connection.completionBlock = block;
     connection.jsonRootObject = self;
     [connection start];
 }
@@ -62,6 +70,7 @@
 // TODO: Make this call a delegate message
 
 - (void)readFromJSONDictionary:(id)d {
+    
     if (![d respondsToSelector:@selector(objectForKeyedSubscript:)]) {
         // We were given an array, not a dict, which means
         // the Hue is telling us the result of a PUT

@@ -17,12 +17,12 @@
 #import "DPHueConfig.h"
 
 @interface DPHueBridge ()
-
+{
+    NSMutableArray *_lights;
+}
 @property (nonatomic, strong, readwrite) DPHueConfig *config;
 
 @property (nonatomic, strong, readwrite) NSString *deviceType;
-@property (nonatomic, strong, readwrite) NSURL *readURL;
-@property (nonatomic, strong, readwrite) NSURL *writeURL;
 @property (nonatomic, strong, readwrite) NSString *swversion;
 @property (nonatomic, strong, readwrite) NSArray *lights;
 @property (nonatomic, strong) GCDAsyncSocket *socket;
@@ -33,25 +33,19 @@
 
 @implementation DPHueBridge
 
+@synthesize lights = _lights;
+
 - (id)initWithHueHost:(NSString *)host username:(NSString *)username {
-    self = [super init];
+    self = [super initWithBridge:self];
     if (self) {
-        self.deviceType = @"DPHue";
-        self.authenticated = NO;
-        self.host = host;
-        self.username = username;
-        
-        self.config = [[DPHueConfig alloc] initWithBridge:self];
+        _deviceType = @"DPHue";
+        _authenticated = NO;
+        _host = host;
+        _username = username;
+        _lights = [NSMutableArray array];
+        _config = [[DPHueConfig alloc] initWithBridge:self];
     }
     return self;
-}
-
-- (void)readWithCompletion:(void (^)(DPHueBridge *, NSError *))block {
-    NSURLRequest *req = [NSURLRequest requestWithURL:self.readURL];
-    DPJSONConnection *connection = [[DPJSONConnection alloc] initWithRequest:req];
-    connection.completionBlock = block;
-    connection.jsonRootObject = self;
-    [connection start];
 }
 
 - (void)registerUsername {
@@ -79,8 +73,7 @@
     NSMutableString *descr = [[NSMutableString alloc] init];
     [descr appendFormat:@"Name: %@\n", self.name];
     [descr appendFormat:@"Version: %@\n", self.swversion];
-    [descr appendFormat:@"readURL: %@\n", self.readURL];
-    [descr appendFormat:@"writeURL: %@\n", self.writeURL];
+    [descr appendFormat:@"URL: %@\n", self.URL];
     [descr appendFormat:@"Number of lights: %lu\n", (unsigned long)self.lights.count];
     for (DPHueLight *light in self.lights) {
         [descr appendString:light.description];
@@ -107,9 +100,11 @@
 
 - (void)setName:(NSString *)name
 {
+    [self willChangeValueForKey:@"name"];
     _name = name;
     self.config.pendingChanges[@"name"] = _name;
     [self.config write];
+    [self didChangeValueForKey:@"name"];
 }
 
 - (void)writeAll {
@@ -117,11 +112,6 @@
     
     for (DPHueLight *light in self.lights)
         [light writeAll];
-}
-
-- (NSURL *)readURL
-{
-    return [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/api/%@", self.host, self.username]];
 }
 
 - (void)triggerTouchlinkWithCompletion:(void (^)(BOOL success, NSString *))block {
@@ -142,7 +132,6 @@
         }
     });
 }
-
 
 #pragma mark - GCDAsyncSocketDelegate
 
@@ -178,6 +167,7 @@
 #pragma mark - DPJSONSerializable
 
 - (void)readFromJSONDictionary:(id)d {
+    [super readFromJSONDictionary:d];
     if (![d respondsToSelector:@selector(objectForKeyedSubscript:)]) {
         // We were given an array, not a dict, which means
         // Hue is giving us a result array, which (in this case)
@@ -185,21 +175,31 @@
         _authenticated = NO;
         return;
     }
-
-    if (d[@"config"][@"name"])
+    
+    if (d[@"config"][@"name"]) {
         _authenticated = YES;
+        _name = d[@"config"][@"name"];
+    }
+    
     _swversion = d[@"config"][@"swversion"];
-    NSMutableArray *tmpLights = [[NSMutableArray alloc] init];
-    for (id lightItem in d[@"lights"]) {
-        DPHueLight *light = [[DPHueLight alloc] initWithBridge:self];
-        [light readFromJSONDictionary:d[@"lights"][lightItem]];
+    
+    NSArray *orderedLightIndexes = [[d[@"lights"] allKeys] sortedArrayUsingSelector:@selector(compare:)];
+    for (id lightItem in orderedLightIndexes) {
         NSNumberFormatter *f = [[NSNumberFormatter alloc] init];
         f.numberStyle = NSNumberFormatterDecimalStyle;
-        light.number = [f numberFromString:lightItem];
-
-        [tmpLights addObject:light];
+        NSNumber *lightIndex = [f numberFromString:lightItem];
+        
+        DPHueLight *light = nil;
+        if (([lightIndex integerValue]-1) < _lights.count) {
+            light = _lights[[lightIndex integerValue]-1];
+        }
+        else {
+            light = [[DPHueLight alloc] initWithBridge:self];
+            [_lights addObject:light];
+        }
+        [light readFromJSONDictionary:d[@"lights"][lightItem]];
+        light.number = lightIndex;
     }
-    _lights = tmpLights;
 }
 
 #pragma mark - NSCoding
@@ -208,21 +208,21 @@
     self = [super init];
     if (self) {
         _deviceType = @"DPHue";
+        _name = [a decodeObjectForKey:@"bridgeName"];
         _username = [a decodeObjectForKey:@"username"];
         _host = [a decodeObjectForKey:@"host"];
         _readURL = [a decodeObjectForKey:@"getURL"];
-        _writeURL = [a decodeObjectForKey:@"putURL"];
-        _lights = [a decodeObjectForKey:@"lights"];
+        _lights = [[a decodeObjectForKey:@"lights"] mutableCopy];
     }
     return self;
 }
 
 - (void)encodeWithCoder:(NSCoder *)a {
-    [a encodeObject:_readURL forKey:@"getURL"];
-    [a encodeObject:_writeURL forKey:@"putURL"];
-    [a encodeObject:_host forKey:@"host"];
-    [a encodeObject:_lights forKey:@"lights"];
+    [a encodeObject:_name forKey:@"bridgeName"];
     [a encodeObject:_username forKey:@"username"];
+    [a encodeObject:_host forKey:@"host"];
+    [a encodeObject:_readURL forKey:@"getURL"];
+    [a encodeObject:_lights forKey:@"lights"];
 }
 
 @end
