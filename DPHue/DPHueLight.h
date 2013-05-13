@@ -19,7 +19,14 @@
 // (unless self.holdUpdates is set to NO, then changes are
 // immediate).
 
-@property (nonatomic, strong) NSColor *color;
+// Lamp name, as returned by the controller.
+@property (nonatomic, strong) NSString *name;
+
+// Lamp on (or off). When a lamp is told to turn on,
+// it returns to its last state, in terms of color,
+// brightness, etc. Unless mains power was lost,
+// then it returns to factory state, which is a warm color.
+@property (nonatomic) BOOL on;
 
 // Lamp brightness, valid values are 0 - 255.
 @property (nonatomic, strong) NSNumber *brightness;
@@ -30,18 +37,15 @@
 // Lamp saturation, valid values are 0 - 255.
 @property (nonatomic, strong) NSNumber *saturation;
 
-// Lamp on (or off). When a lamp is told to turn on,
-// it returns to its last state, in terms of color,
-// brightness, etc. Unless mains power was lost,
-// then it returns to factory state, which is a warm color.
-@property (nonatomic) BOOL on;
-
 // Color in (x,y) CIE 1931 coordinates. See below URL for details:
 // http://en.wikipedia.org/wiki/CIE_1931
 @property (nonatomic, strong) NSArray *xy;
 
 // Color temperature in mireds, valid values are 154 - 500.
 @property (nonatomic, strong) NSNumber *colorTemperature;
+
+// The NSColor approximation is synthesized based on the current colorMode
+@property (nonatomic, strong) NSColor *color;
 
 // Specifies how quickly a lamp should change from its old state
 // to new state. Supposedly a setting of 0 allows for instant
@@ -51,9 +55,6 @@
 // Set to YES by default.
 // If set to YES, changes are held until [DPHueLight write] is called.
 @property (nonatomic) BOOL holdUpdates;
-
-// Lamp name, as returned by the controller.
-@property (nonatomic, strong) NSString *name;
 
 // Properties you may be interested in reading
 

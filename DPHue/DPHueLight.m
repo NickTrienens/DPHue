@@ -13,6 +13,9 @@
 #import "DPHueBridge.h"
 
 @interface DPHueLight ()
+{
+    BOOL _readingState;
+}
 
 @property (nonatomic, strong) DPHueLightState *state;
 
@@ -26,13 +29,84 @@
 
 @implementation DPHueLight
 
++ (NSDictionary *)propertyKeyToJSONKeyDictionary
+{
+    static NSDictionary *propertyDictionary = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        propertyDictionary = @{
+                               @"name": @"name",
+                               @"on" : @"on",
+                               @"brightness" : @"bri",
+                               @"hue" : @"hue",
+                               @"saturation" : @"sat",
+                               @"xy" : @"xy",
+                               @"colorTemperature" : @"ct",
+                               };
+    });
+    return propertyDictionary;
+}
+
 - (id)initWithBridge:(DPHueBridge *)bridge {
     self = [super initWithBridge:bridge];
     if (self) {
+        
         self.holdUpdates = YES;
+        _readingState = NO;
+        
+        NSKeyValueObservingOptions options = NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld;
+        [self addObserver:self forKeyPath:@"name" options:options context:nil];
+        [self addObserver:self forKeyPath:@"on" options:options context:nil];
+        [self addObserver:self forKeyPath:@"brightness" options:options context:nil];
+        [self addObserver:self forKeyPath:@"hue" options:options context:nil];
+        [self addObserver:self forKeyPath:@"saturation" options:options context:nil];
+        [self addObserver:self forKeyPath:@"xy" options:options context:nil];
+        [self addObserver:self forKeyPath:@"colorTemperature" options:options context:nil];
+        
         self.state = [[DPHueLightState alloc] initWithBridge:self.bridge light:self];
     }
     return self;
+}
+
+- (void)dealloc
+{
+    [self removeObserver:self forKeyPath:@"name"];
+    [self removeObserver:self forKeyPath:@"on"];
+    [self removeObserver:self forKeyPath:@"brightness"];
+    [self removeObserver:self forKeyPath:@"hue"];
+    [self removeObserver:self forKeyPath:@"saturation"];
+    [self removeObserver:self forKeyPath:@"xy"];
+    [self removeObserver:self forKeyPath:@"colorTemperature"];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
+{
+    if ((object == self) && (_readingState == NO)) {
+        
+        DPHueObject *changedObject = nil;
+        if ([keyPath isEqualToString:@"name"]) {
+            changedObject = self;
+        }
+        else {
+            changedObject = self.state;
+        }
+        
+        id changedProperty = nil;
+        if ([keyPath isEqualToString:@"on"]) {
+            changedProperty = [NSNumber numberWithBool:[[object valueForKey:keyPath] boolValue]];
+        }
+        else {
+            changedProperty = [object valueForKey:keyPath];
+        }
+        
+        if ([change[NSKeyValueChangeOldKey] isEqualTo:change[NSKeyValueChangeNewKey]])
+            return;
+        
+        [changedObject.pendingChanges setObject:changedProperty forKey:[[self class] propertyKeyToJSONKeyDictionary][keyPath]];
+        
+        if (_holdUpdates == NO)
+            [self write];
+    }
 }
 
 - (NSString *)description {
@@ -58,22 +132,11 @@
     return [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/api/%@/lights/%@", self.bridge.host, self.bridge.username, self.number]];
 }
 
-#pragma mark - Setters that update pendingChanges
-
-- (void)setName:(NSString *)name {
-    _name = name;
-    self.pendingChanges[@"name"] = name;
-    if (!self.holdUpdates)
-        [self write];
-}
-
 #pragma mark - LightState write through
 
-- (void)setOn:(BOOL)on {
-    _on = on;
-    self.state.pendingChanges[@"on"] = [NSNumber numberWithBool:on];
-    if (!self.holdUpdates)
-        [self.state write];
++ (NSSet *)keyPathsForValuesAffectingColor
+{
+    return [NSSet setWithArray:@[@"colorMode", @"hue", @"saturation", @"colorTemperature"]];
 }
 
 - (void)setColor:(NSColor *)color {
@@ -82,55 +145,106 @@
     [self setHue:[NSNumber numberWithDouble:[color hueComponent] * 65535]];
     [self setSaturation:[NSNumber numberWithDouble:[color saturationComponent] * 255]];
     [self setBrightness:[NSNumber numberWithDouble:[color brightnessComponent] * 255]];
-    _color = color;
+    self.colorMode = @"hs";
     _holdUpdates = holdUpdates;
     if (!self.holdUpdates)
         [self.state write];
 }
 
+- (NSColor *)color
+{
+    return [self colorForColorMode:_colorMode];
+}
+
+- (NSColor *)colorForColorMode:(NSString *)colorMode
+{
+    NSColor *currentColor = [NSColor blackColor];
+    if ([colorMode isEqualToString:@"hs"] || [colorMode isEqualToString:@"xy"]) {
+        currentColor =  [NSColor colorWithCalibratedHue:([_hue integerValue]/65535.0) saturation:([_saturation integerValue]/255.0) brightness:([_brightness integerValue]/255.0) alpha:1.0];
+    }
+    else if ([colorMode isEqualToString:@"ct"]) {
+        // Convert color temperature to RGB
+        //http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
+        CGFloat red, green, blue;
+        // kelvin = 1M / mireds
+        double kelvin = 1.0e6 / [_colorTemperature doubleValue];
+        // Divide by 100
+        kelvin = kelvin / 100.0;
+        
+        // Red
+        if (kelvin <= 66) {
+            red = 255;
+        }
+        else {
+            red = kelvin - 60;
+            // 329.698727446/255.0 = 1.29293618606275
+            red = 329.698727446 * pow(red, -0.1332047592);
+        }
+        red /= 255.0;
+        
+        // Green
+        if (kelvin <= 66) {
+            green = 99.4708025861 * log(kelvin) - 161.1195681661;
+        }
+        else {
+            green = kelvin - 60;
+            green = 288.1221695283 * pow(green, -0.0755148492);
+        }
+        green /= 255.0;
+        
+        // Blue
+        if (kelvin >= 66) {
+            blue = 255.0;
+        }
+        else {
+            if (kelvin <= 19) {
+                blue = 0.0;
+            }
+            else {
+                blue = kelvin - 10;
+                blue = 138.5177312231 * log(blue) - 305.0447927307;
+            }
+        }
+        blue /= 255.0;
+        
+        currentColor = [NSColor colorWithCalibratedRed:red green:green blue:blue alpha:1.0];
+    }
+
+    return currentColor;
+}
+
 - (void)setBrightness:(NSNumber *)brightness {
+    [self willChangeValueForKey:@"brightness"];
     brightness = [brightness isGreaterThan:@255] ? @255 : brightness;
     brightness = [brightness isLessThan:@0] ? @0 : brightness;
     _brightness = @([brightness integerValue]);
-    self.state.pendingChanges[@"bri"] = _brightness;
-    if (!self.holdUpdates)
-        [self.state write];
+    [self didChangeValueForKey:@"brightness"];
 }
 
 - (void)setHue:(NSNumber *)hue {
+    [self willChangeValueForKey:@"hue"];
     hue = [hue isGreaterThan:@65535] ? @65535 : hue;
     hue = [hue isLessThan:@0] ? @0 : hue;
     _hue = @([hue integerValue]);
-    self.state.pendingChanges[@"hue"]  = _hue;
-    if (!self.holdUpdates)
-        [self.state write];
-}
-
-// This is the closest I've ever come to unintentionally naming a method "sexy"
-- (void)setXy:(NSArray *)xy {
-    _xy = xy;
-    self.state.pendingChanges[@"xy"] = _xy;
-    if (!self.holdUpdates)
-        [self.state write];
-}
-
-- (void)setColorTemperature:(NSNumber *)colorTemperature {
-    colorTemperature = [colorTemperature isGreaterThan:@500] ? @500 : colorTemperature;
-    colorTemperature = [colorTemperature isLessThan:@154] ? @154 : colorTemperature;
-    _colorTemperature = @([colorTemperature integerValue]);
-    self.state.pendingChanges[@"ct"] = _colorTemperature;
-    if (!self.holdUpdates)
-        [self.state write];
+    [self didChangeValueForKey:@"hue"];
 }
 
 - (void)setSaturation:(NSNumber *)saturation {
+    [self willChangeValueForKey:@"saturation"];
     saturation = [saturation isGreaterThan:@255] ? @255 : saturation;
     saturation = [saturation isLessThan:@0] ? @0 : saturation;
     _saturation = @([saturation integerValue]);
-    self.state.pendingChanges[@"sat"] = _saturation;
-    if (!self.holdUpdates)
-        [self.state write];
+    [self didChangeValueForKey:@"saturation"];
 }
+
+- (void)setColorTemperature:(NSNumber *)colorTemperature {
+    [self willChangeValueForKey:@"colorTemperature"];
+    colorTemperature = [colorTemperature isGreaterThan:@500] ? @500 : colorTemperature;
+    colorTemperature = [colorTemperature isLessThan:@154] ? @154 : colorTemperature;
+    _colorTemperature = @([colorTemperature integerValue]);
+    [self didChangeValueForKey:@"colorTemperature"];
+}
+
 #pragma mark - Write
 
 - (void)writeAll {
@@ -171,20 +285,25 @@
 - (void)readFromJSONDictionary:(id)d {
     [super readFromJSONDictionary:d];
     if ([d respondsToSelector:@selector(objectForKeyedSubscript:)]) {
-        _name = d[@"name"] ?: _name;
-        _modelid = d[@"modelid"] ?: _modelid;
-        _swversion = d[@"swversion"] ?: _swversion;
-        _type = d[@"type"] ?: _type;
-        _brightness = d[@"state"][@"bri"] ?: _brightness;
-        _colorMode = d[@"state"][@"colormode"] ?: _colorMode;
-        _hue = d[@"state"][@"hue"] ?: _hue;
-        _type = d[@"type"] ?: _type;
-        _on = [d[@"state"][@"on"] boolValue];
-        _reachable = [d[@"state"][@"reachable"] boolValue];
-        _xy = d[@"state"][@"xy"];
-        _colorTemperature = d[@"state"][@"ct"] ?: _colorTemperature;
-        _saturation = d[@"state"][@"sat"] ?: _saturation;
-        _color = [NSColor colorWithDeviceHue:([_hue integerValue]/65535.0) saturation:([_saturation integerValue]/255.0) brightness:([_brightness integerValue]/255.0) alpha:1.0];
+        _readingState = YES;
+        
+        self.name = d[@"name"] ?: _name;
+        self.on = [d[@"state"][@"on"] boolValue];
+        self.colorMode = d[@"state"][@"colormode"] ?: _colorMode;
+        
+        self.brightness = d[@"state"][@"bri"] ?: _brightness;
+        
+        self.hue = d[@"state"][@"hue"] ?: _hue;
+        self.saturation = d[@"state"][@"sat"] ?: _saturation;
+        self.xy = d[@"state"][@"xy"] ?: _xy;
+        self.colorTemperature = d[@"state"][@"ct"] ?: _colorTemperature;
+        
+        self.reachable = [d[@"state"][@"reachable"] boolValue];
+        self.modelid = d[@"modelid"] ?: _modelid;
+        self.swversion = d[@"swversion"] ?: _swversion;
+        self.type = d[@"type"] ?: _type;
+        
+        _readingState = NO;
     }
 }
 
@@ -194,20 +313,30 @@
     self = [super initWithCoder:a];
     if (self) {
         self.holdUpdates = YES;
-        _name = [a decodeObjectForKey:@"name"];
-        _modelid = [a decodeObjectForKey:@"modelid"];
-        _swversion = [a decodeObjectForKey:@"swversion"];
-        _type = [a decodeObjectForKey:@"type"];
-        _brightness = [a decodeObjectForKey:@"brightness"];
-        _colorMode = [a decodeObjectForKey:@"colorMode"];
-        _hue = [a decodeObjectForKey:@"hue"];
-        _type = [a decodeObjectForKey:@"bulbType"];
-        _on = [[a decodeObjectForKey:@"on"] boolValue];
-        _xy = [a decodeObjectForKey:@"xy"];
-        _colorTemperature = [a decodeObjectForKey:@"colorTemperature"];
-        _saturation = [a decodeObjectForKey:@"saturation"];
-        _number = [a decodeObjectForKey:@"number"];
-        _color = [NSColor colorWithDeviceHue:([_hue integerValue]/65535.0) saturation:([_saturation integerValue]/255.0) brightness:([_brightness integerValue]/255.0) alpha:1.0];
+        _readingState = YES;
+        
+        self.number = [a decodeObjectForKey:@"number"];
+        
+        self.name = [a decodeObjectForKey:@"name"];
+        
+        self.on = [[a decodeObjectForKey:@"on"] boolValue];
+        
+        self.colorMode = [a decodeObjectForKey:@"colorMode"];
+        
+        self.brightness = [a decodeObjectForKey:@"brightness"];
+        
+        self.hue = [a decodeObjectForKey:@"hue"];
+        
+        self.xy = [a decodeObjectForKey:@"xy"];
+        self.colorTemperature = [a decodeObjectForKey:@"colorTemperature"];
+        self.saturation = [a decodeObjectForKey:@"saturation"];
+        
+        
+        self.modelid = [a decodeObjectForKey:@"modelid"];
+        self.swversion = [a decodeObjectForKey:@"swversion"];
+        self.type = [a decodeObjectForKey:@"type"];
+        
+        _readingState = NO;
     }
     return self;
 }
@@ -221,7 +350,6 @@
     [a encodeObject:_brightness forKey:@"brightness"];
     [a encodeObject:_colorMode forKey:@"colorMode"];
     [a encodeObject:_hue forKey:@"hue"];
-    [a encodeObject:_type forKey:@"bulbType"];
     [a encodeObject:[NSNumber numberWithBool:self->_on] forKey:@"on"];
     [a encodeObject:_xy forKey:@"xy"];
     [a encodeObject:_colorTemperature forKey:@"colorTemperature"];
