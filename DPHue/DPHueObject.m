@@ -20,8 +20,13 @@
     return self;
 }
 
+- (NSString *)address
+{
+    return [NSString stringWithFormat:@"/api/%@", self.bridge.username];
+}
+
 - (NSURL *)URL {
-    return [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/api/%@", self.bridge.host, self.bridge.username]];
+    return [NSURL URLWithString:[NSString stringWithFormat:@"http://%@%@", self.bridge.host, [self address]]];
 }
 
 - (void)read {
@@ -52,8 +57,6 @@
     DPJSONConnection *connection = [[DPJSONConnection alloc] initWithRequest:request];
     connection.jsonRootObject = self;
     NSMutableString *msg = [[NSMutableString alloc] init];
-    [msg appendFormat:@"Writing to: %@\n", self.URL];
-    [msg appendFormat:@"Writing values: %@\n", pretty];
     connection.completionBlock = ^(id obj, NSError *err) {
 
     };

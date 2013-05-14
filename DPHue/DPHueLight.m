@@ -9,15 +9,12 @@
 
 #import "DPHueLight.h"
 #import "WSLog.h"
-#import "DPHueLightState.h"
 #import "DPHueBridge.h"
 
 @interface DPHueLight ()
 {
     BOOL _readingState;
 }
-
-@property (nonatomic, strong) DPHueLightState *state;
 
 @property (nonatomic, readwrite) BOOL reachable;
 @property (nonatomic, strong, readwrite) NSString *swversion;
@@ -128,8 +125,9 @@
     return descr;
 }
 
-- (NSURL *)URL {
-    return [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/api/%@/lights/%@", self.bridge.host, self.bridge.username, self.number]];
+- (NSString *)address
+{
+    return [NSString stringWithFormat:@"/api/%@/lights/%@", self.bridge.username, self.number];
 }
 
 #pragma mark - LightState write through

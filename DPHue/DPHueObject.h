@@ -20,6 +20,7 @@
 
 @property (readonly) NSMutableDictionary *pendingChanges;
 
+- (NSString *)address;
 - (NSURL *)URL;
 
 // Re-download & parse controller's state for this particular light

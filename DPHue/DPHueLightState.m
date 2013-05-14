@@ -21,8 +21,9 @@
     return self;
 }
 
-- (NSURL *)URL {
-    return [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/api/%@/lights/%@/state", self.bridge.host, self.bridge.username, self.light.number]];
+- (NSString *)address
+{
+    return [NSString stringWithFormat:@"/api/%@/lights/%@/state", self.bridge.username, self.light.number];
 }
 
 - (void)writeAll {

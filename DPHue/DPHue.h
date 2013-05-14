@@ -10,6 +10,7 @@
 #import <DPHue/DPHueBridge.h>
 #import <DPHue/DPHueLight.h>
 #import <DPHue/DPHueDiscover.h>
+#import <DPHue/DPHueSchedule.h>
 
 @protocol DPHueDelegate <NSObject>
 @optional

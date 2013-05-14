@@ -11,8 +11,9 @@
 
 @implementation DPHueConfig
 
-- (NSURL *)URL {
-    return [NSURL URLWithString:[NSString stringWithFormat:@"http://%@/api/%@/config", self.bridge.host, self.bridge.username]];
+- (NSString *)address
+{
+    return [NSString stringWithFormat:@"/api/%@/config", self.bridge.username];
 }
 
 - (void)writeAll {

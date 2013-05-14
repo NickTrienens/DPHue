@@ -175,7 +175,7 @@
         _authenticated = NO;
         return;
     }
-    
+
     if (d[@"config"][@"name"]) {
         _authenticated = YES;
         _name = d[@"config"][@"name"];

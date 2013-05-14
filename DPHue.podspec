@@ -9,5 +9,6 @@ Pod::Spec.new do |s|
   s.source_files = 'DPHue/*.{h,m}'
   s.requires_arc = true
   s.dependency 'CocoaAsyncSocket', '~> 0.0.1'
+  s.osx.deployment_target = '10.7'
   s.ios.deployment_target = '5.0'
 end

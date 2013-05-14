@@ -10,6 +10,7 @@
 #import <Foundation/Foundation.h>
 #import "DPJSONSerializable.h"
 #import "DPHueObject.h"
+#import "DPHueLightState.h"
 
 @interface DPHueLight : DPHueObject <DPJSONSerializable, NSCoding>
 
@@ -18,6 +19,8 @@
 // controller until [DPHueLight write] is called
 // (unless self.holdUpdates is set to NO, then changes are
 // immediate).
+
+@property (nonatomic, strong) DPHueLightState *state;
 
 // Lamp name, as returned by the controller.
 @property (nonatomic, strong) NSString *name;
