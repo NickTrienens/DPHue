@@ -96,7 +96,7 @@
             changedProperty = [object valueForKey:keyPath];
         }
         
-        if ([change[NSKeyValueChangeOldKey] isEqualTo:change[NSKeyValueChangeNewKey]])
+        if ([change[NSKeyValueChangeNewKey] isEqualTo:change[NSKeyValueChangeOldKey]])
             return;
         
         [changedObject.pendingChanges setObject:changedProperty forKey:[[self class] propertyKeyToJSONKeyDictionary][keyPath]];
@@ -137,12 +137,14 @@
     return [NSSet setWithArray:@[@"colorMode", @"hue", @"saturation", @"colorTemperature"]];
 }
 
-- (void)setColor:(NSColor *)color {
+- (void)setColor:(NSColor *)color
+{
     BOOL holdUpdates = self.holdUpdates;
     _holdUpdates = YES;
-    [self setHue:[NSNumber numberWithDouble:[color hueComponent] * 65535]];
-    [self setSaturation:[NSNumber numberWithDouble:[color saturationComponent] * 255]];
-    [self setBrightness:[NSNumber numberWithDouble:[color brightnessComponent] * 255]];
+    color = [color colorUsingColorSpace:[NSColorSpace genericRGBColorSpace]];
+    self.hue = [NSNumber numberWithDouble:[color hueComponent] * 65535];
+    self.saturation = [NSNumber numberWithDouble:[color saturationComponent] * 255];
+    self.brightness = [NSNumber numberWithDouble:[color brightnessComponent] * 255];
     self.colorMode = @"hs";
     _holdUpdates = holdUpdates;
     if (!self.holdUpdates)
