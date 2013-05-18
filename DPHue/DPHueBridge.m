@@ -200,6 +200,9 @@
         [light readFromJSONDictionary:d[@"lights"][lightItem]];
         light.number = lightIndex;
     }
+    [_lights sortUsingComparator:^NSComparisonResult(DPHueLight *obj1, DPHueLight *obj2) {
+        return [obj1.number compare:obj2.number];
+    }];
 }
 
 #pragma mark - NSCoding

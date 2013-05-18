@@ -53,10 +53,12 @@
     [self.log appendFormat:@"%@: Making request to %@\n", [NSDate date], req];
     [connection start];
     // seconds seconds later, stop discovering
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, seconds * NSEC_PER_SEC), dispatch_get_current_queue(), ^{
-        block(self.log);
-        [self stopDiscovery];
-    });
+    if (seconds > 0) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, seconds * NSEC_PER_SEC), dispatch_get_current_queue(), ^{
+            block(self.log);
+            [self stopDiscovery];
+        });
+    }
 }
 
 - (void)startSSDPDiscovery {

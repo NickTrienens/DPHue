@@ -58,9 +58,6 @@ NSString *const kHueUsernamePrefKey = @"HueAPIUsernamePrefKey";
     if (_isSearching == NO) {
         self.isSearching = YES;
         [_dhd discoverForDuration:0 withCompletion:^(NSMutableString *log) {
-            [self willChangeValueForKey:@"isSearching"];
-            self.isSearching = NO;
-            [self didChangeValueForKey:@"isSearching"];
         }];
     }
 }
@@ -114,6 +111,7 @@ NSString *const kHueUsernamePrefKey = @"HueAPIUsernamePrefKey";
             if (hue.authenticated == YES) {
                 [self willChangeValueForKey:@"bridges"];
                 [_bridges addObject:hue];
+                [self cancelDiscovery];
                 [self didChangeValueForKey:@"bridges"];
             }
             else {
