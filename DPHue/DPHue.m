@@ -69,6 +69,37 @@ NSString *const kHueUsernamePrefKey = @"HueAPIUsernamePrefKey";
     _dhd = nil;
 }
 
+- (void)attemptToConnectToHue:(NSString *)host withCompletion:(void (^)(id, NSError *))block
+{
+    for (DPHueBridge *existingBridge in _bridges) {
+        if ([existingBridge.host isEqualToString:host])
+            return;
+    }
+    DPHueBridge *newHue = [[DPHueBridge alloc] initWithHueHost:host username:[[NSUserDefaults standardUserDefaults] objectForKey:kHueUsernamePrefKey]];
+    [newHue readWithCompletion:^(DPHueBridge *hue, NSError *err) {
+        if (err == nil) {
+            if (hue.authenticated == YES) {
+                [self willChangeValueForKey:@"bridges"];
+                [_bridges addObject:hue];
+                [self didChangeValueForKey:@"bridges"];
+                block(hue, nil);
+            }
+            else {
+                [hue registerUsername];
+                if ([_delegate respondsToSelector:@selector(alertUserToPressLinkButtonOnBridge:)]) {
+                    [_delegate alertUserToPressLinkButtonOnBridge:hue];
+                }
+                else {
+                    NSLog(@"Found Hue. Press the bridge button to complete registration!");
+                }
+            }
+        }
+        else {
+            block(nil, err);
+        }
+    }];
+}
+
 - (NSArray *)bridges
 {
     return _bridges;

@@ -29,6 +29,7 @@
 
 // Write only pending changes to controller
 - (void)write;
+- (void)writeChanges:(NSDictionary *)changes;
 
 // Write entire state to controller, regardless of changes
 - (void)writeAll;

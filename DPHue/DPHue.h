@@ -27,6 +27,8 @@
 
 + (id)sharedInstance;
 
+- (void)attemptToConnectToHue:(NSString *)host withCompletion:(void (^)(id object, NSError *err))block;
+
 - (void)startDiscovery;
 - (void)cancelDiscovery;
 

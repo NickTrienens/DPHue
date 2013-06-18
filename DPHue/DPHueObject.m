@@ -44,12 +44,26 @@
     [connection start];
 }
 
+- (void)writeChanges:(NSDictionary *)changes
+{
+    NSData *json = [NSJSONSerialization dataWithJSONObject:changes options:0 error:nil];
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
+    request.URL = self.URL;
+    request.HTTPMethod = @"PUT";
+    request.HTTPBody = json;
+    DPJSONConnection *connection = [[DPJSONConnection alloc] initWithRequest:request];
+    NSMutableString *msg = [[NSMutableString alloc] init];
+    connection.completionBlock = ^(id obj, NSError *err) {
+        NSDictionary *d = [NSJSONSerialization JSONObjectWithData:obj options:0 error:nil];
+        NSLog(@"%@", d);
+    };
+    [connection start];
+}
+
 - (void)write {
     if (self.pendingChanges.count == 0)
         return;
-    NSData *json = [NSJSONSerialization dataWithJSONObject:self.pendingChanges options:0 error:nil];
-    NSString *pretty = [[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding];
-    
+    NSData *json = [NSJSONSerialization dataWithJSONObject:[self.pendingChanges copy] options:0 error:nil];
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
     request.URL = self.URL;
     request.HTTPMethod = @"PUT";
@@ -89,7 +103,7 @@
             }
         }
         if (errorFound == NO) {
-            [_pendingChanges removeAllObjects];
+            _pendingChanges = [NSMutableDictionary dictionary];
         }
     }
 }
