@@ -97,7 +97,7 @@
             changedProperty = [object valueForKey:keyPath];
         }
         
-        if ([change[NSKeyValueChangeNewKey] isEqualTo:change[NSKeyValueChangeOldKey]])
+        if ([change[NSKeyValueChangeNewKey] isEqual:change[NSKeyValueChangeOldKey]])
             return;
         
         [changedObject.pendingChanges setObject:changedProperty forKey:[[self class] propertyKeyToJSONKeyDictionary][keyPath]];
@@ -138,6 +138,117 @@
     return [NSSet setWithArray:@[@"colorMode", @"hue", @"saturation", @"colorTemperature"]];
 }
 
+#if TARGET_OS_IPHONE
+- (void)setColor:(UIColor *)color
+{
+    BOOL holdUpdates = self.holdUpdates;
+    _holdUpdates = YES;
+	float h, s, b, a;
+	[color getHue:&h saturation:&s brightness:&b alpha:&a];
+	
+    self.hue = @(h * 65535);
+    self.saturation = @(s * 255);
+    self.brightness = @(b * 255);
+    self.colorMode = @"hs";
+    _holdUpdates = holdUpdates;
+    if (!self.holdUpdates)
+        [self.state write];
+}
+
+- (UIColor *)color
+{
+    return [self colorForColorMode:_colorMode];
+}
+
+- (UIColor *)colorForColorMode:(NSString *)colorMode
+{
+    UIColor *currentColor = [UIColor blackColor];
+    if ([colorMode isEqualToString:@"hs"] || [colorMode isEqualToString:@"xy"]) {
+        currentColor =  [UIColor colorWithHue:([_hue integerValue]/65535.0) saturation:([_saturation integerValue]/255.0) brightness:([_brightness integerValue]/255.0) alpha:1.0];
+    }
+    else if ([colorMode isEqualToString:@"ct"]) {
+        // Convert color temperature to RGB
+        //http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
+        CGFloat red, green, blue;
+        // kelvin = 1M / mireds
+        double kelvin = 1.0e6 / [_colorTemperature doubleValue];
+        // Divide by 100
+        kelvin = kelvin / 100.0;
+        
+        // Red
+        if (kelvin <= 66) {
+            red = 255;
+        }
+        else {
+            red = kelvin - 60;
+            // 329.698727446/255.0 = 1.29293618606275
+            red = 329.698727446 * pow(red, -0.1332047592);
+        }
+        red /= 255.0;
+        
+        // Green
+        if (kelvin <= 66) {
+            green = 99.4708025861 * log(kelvin) - 161.1195681661;
+        }
+        else {
+            green = kelvin - 60;
+            green = 288.1221695283 * pow(green, -0.0755148492);
+        }
+        green /= 255.0;
+        
+        // Blue
+        if (kelvin >= 66) {
+            blue = 255.0;
+        }
+        else {
+            if (kelvin <= 19) {
+                blue = 0.0;
+            }
+            else {
+                blue = kelvin - 10;
+                blue = 138.5177312231 * log(blue) - 305.0447927307;
+            }
+        }
+        blue /= 255.0;
+        
+        currentColor = [UIColor colorWithRed:red green:green blue:blue alpha:1.0];
+    }
+
+    return currentColor;
+}
+- (void)setBrightness:(NSNumber *)brightness {
+    [self willChangeValueForKey:@"brightness"];
+    brightness = [brightness floatValue] > 255 ? @255 : brightness;
+    brightness = [brightness floatValue] < 0 ? @0 : brightness;
+    _brightness = @([brightness integerValue]);
+    [self didChangeValueForKey:@"brightness"];
+}
+
+- (void)setHue:(NSNumber *)hue {
+    [self willChangeValueForKey:@"hue"];
+    hue = [hue floatValue] > 65535 ? @65535 : hue;
+    hue = [hue floatValue] < 0 ? @0 : hue;
+    _hue = @([hue integerValue]);
+    [self didChangeValueForKey:@"hue"];
+}
+
+- (void)setSaturation:(NSNumber *)saturation {
+    [self willChangeValueForKey:@"saturation"];
+    saturation = [saturation floatValue] > 255 ? @255 : saturation;
+    saturation = [saturation floatValue] < 0 ? @0 : saturation;
+    _saturation = @([saturation integerValue]);
+    [self didChangeValueForKey:@"saturation"];
+}
+
+- (void)setColorTemperature:(NSNumber *)colorTemperature {
+    [self willChangeValueForKey:@"colorTemperature"];
+    colorTemperature = [colorTemperature floatValue] > 500 ? @500 : colorTemperature;
+    colorTemperature = [colorTemperature floatValue] < 154 ? @154 : colorTemperature;
+    _colorTemperature = @([colorTemperature integerValue]);
+    [self didChangeValueForKey:@"colorTemperature"];
+}
+
+#else
 - (void)setColor:(NSColor *)color
 {
     BOOL holdUpdates = self.holdUpdates;
@@ -245,6 +356,7 @@
     _colorTemperature = @([colorTemperature integerValue]);
     [self didChangeValueForKey:@"colorTemperature"];
 }
+#endif
 
 #pragma mark - Write
 

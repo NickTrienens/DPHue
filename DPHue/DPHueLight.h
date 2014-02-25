@@ -48,7 +48,11 @@
 @property (nonatomic, strong) NSNumber *colorTemperature;
 
 // The NSColor approximation is synthesized based on the current colorMode
+#if TARGET_OS_IPHONE
+@property (nonatomic, strong) UIColor *color;
+#else
 @property (nonatomic, strong) NSColor *color;
+#endif
 
 // Specifies how quickly a lamp should change from its old state
 // to new state. Supposedly a setting of 0 allows for instant
