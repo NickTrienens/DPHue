@@ -182,6 +182,7 @@
     }
     
     _swversion = d[@"config"][@"swversion"];
+	_mac = d[@"config"][@"mac"];
     
     NSArray *orderedLightIndexes = [[d[@"lights"] allKeys] sortedArrayUsingSelector:@selector(compare:)];
     for (id lightItem in orderedLightIndexes) {
@@ -212,6 +213,7 @@
     if (self) {
         _deviceType = @"DPHue";
         _name = [a decodeObjectForKey:@"bridgeName"];
+        _mac = [a decodeObjectForKey:@"mac"];
         _username = [a decodeObjectForKey:@"username"];
         _host = [a decodeObjectForKey:@"host"];
         _readURL = [a decodeObjectForKey:@"getURL"];
@@ -222,6 +224,7 @@
 
 - (void)encodeWithCoder:(NSCoder *)a {
     [a encodeObject:_name forKey:@"bridgeName"];
+    [a encodeObject:_mac forKey:@"mac"];
     [a encodeObject:_username forKey:@"username"];
     [a encodeObject:_host forKey:@"host"];
     [a encodeObject:_readURL forKey:@"getURL"];

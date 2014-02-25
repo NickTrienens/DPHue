@@ -27,6 +27,9 @@
 // The "name" of the Hue controller, as returned by the API
 @property (nonatomic, strong) NSString *name;
 
+// The mac-address of the Hue controller, as returned by the API
+@property (nonatomic, strong) NSString *mac;
+
 // Firmware version
 @property (nonatomic, strong, readonly) NSString *swversion;
 
