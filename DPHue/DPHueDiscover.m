@@ -42,8 +42,8 @@
             // web service gave us a IP
             [self.log appendFormat:@"%@: Received Hue IP from web service: %@\n", [NSDate date], pnp.hueIP];
             self.foundHue = YES;
-            if ([self.delegate respondsToSelector:@selector(foundHueAt:discoveryLog:)]) {
-                [self.delegate foundHueAt:pnp.hueIP discoveryLog:self.log];
+            if ([self.delegate respondsToSelector:@selector(foundHueAt:mac:discoveryLog:)]) {
+                [self.delegate foundHueAt:pnp.hueIP mac:pnp.hueMACAddress discoveryLog:self.log];
             }
         } else {
             [self.log appendFormat:@"%@: Received response from web service, but no IP, starting SSDP discovery\n", [NSDate date]];
@@ -98,10 +98,23 @@
         NSString *msg = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
         // If this string is found, then url == hue!
         if ([msg rangeOfString:@"Philips hue bridge 2012"].location != NSNotFound) {
-            [self.log appendFormat:@"%@: Found hue at %@!\n", [NSDate date], url.host];
-            if ([self.delegate respondsToSelector:@selector(foundHueAt:discoveryLog:)]) {
+			// Extract the MAC from the serial number
+			NSRegularExpression *reg = [[NSRegularExpression alloc] initWithPattern:@"<serialNumber>(.*?)</serialNumber>" options:0 error:nil];
+			NSArray *matches = [reg matchesInString:msg options:0 range:NSMakeRange(0, msg.length)];
+			NSMutableString *mac = nil;
+			if (matches.count > 0) {
+				NSTextCheckingResult *result = matches[0];
+				mac = [[msg substringWithRange:[result rangeAtIndex:1]] mutableCopy];
+				for (int i = 2 ; i < mac.length ; i += 3) {
+					[mac insertString:@":" atIndex:i];
+				}
+				
+			}
+
+            [self.log appendFormat:@"%@: Found hue %@ at %@!\n", [NSDate date], mac, url.host];
+            if ([self.delegate respondsToSelector:@selector(foundHueAt:mac:discoveryLog:)]) {
                 if (!self.foundHue) {
-                    [self.delegate foundHueAt:url.host discoveryLog:self.log];
+                    [self.delegate foundHueAt:url.host mac:mac discoveryLog:self.log];
                     self.foundHue = YES;
                 }
             }

@@ -17,6 +17,14 @@
         _hueID = dict[@"id"];
         _hueIP = dict[@"internalipaddress"];
         _hueMACAddress = dict[@"macaddress"];
+		if (!_hueMACAddress) {
+			NSMutableString *mac = [_hueID mutableCopy];
+			[mac deleteCharactersInRange:NSMakeRange(6, 4)];
+			for (int i = 2 ; i < mac.length ; i += 3) {
+				[mac insertString:@":" atIndex:i];
+			}
+			_hueMACAddress = mac;
+		}
     }
 }
 

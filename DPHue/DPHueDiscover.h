@@ -19,7 +19,7 @@
 // Conforming to this protocol allows a UI to be informed if a
 // Hue controller was found.
 @protocol DPHueDiscoverDelegate <NSObject>
-- (void)foundHueAt:(NSString *)host discoveryLog:(NSString *)log;
+- (void)foundHueAt:(NSString *)host mac:(NSString *)mac discoveryLog:(NSString *)log;
 @end
 
 @interface DPHueDiscover : NSObject <GCDAsyncUdpSocketDelegate>

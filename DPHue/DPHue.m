@@ -130,7 +130,7 @@ NSString *const kHueUsernamePrefKey = @"HueAPIUsernamePrefKey";
 
 #pragma mark - DPHueDiscover delegate
 
-- (void)foundHueAt:(NSString *)host discoveryLog:(NSMutableString *)log {
+- (void)foundHueAt:(NSString *)host mac:(NSString *)mac discoveryLog:(NSMutableString *)log {
     for (DPHueBridge *existingBridge in _bridges) {
         if ([existingBridge.host isEqualToString:host])
             return;
