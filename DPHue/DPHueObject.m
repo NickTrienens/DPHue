@@ -63,6 +63,7 @@
 - (void)write {
     if (self.pendingChanges.count == 0)
         return;
+    NSLog(@"Writing changes: %@", self.pendingChanges);
     NSData *json = [NSJSONSerialization dataWithJSONObject:[self.pendingChanges copy] options:0 error:nil];
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
     request.URL = self.URL;
@@ -75,6 +76,7 @@
 
     };
     [connection start];
+    [self.pendingChanges removeAllObjects];
 }
 
 - (void)writeAll {
