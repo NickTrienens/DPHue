@@ -133,6 +133,18 @@
     return [NSString stringWithFormat:@"/api/%@/lights/%@", self.bridge.username, self.number];
 }
 
+- (void)alert
+{
+	id pendingChanges = [self.state.pendingChanges copy];
+
+	[self.state.pendingChanges removeAllObjects];
+	self.state.pendingChanges[@"alert"] = @"select";
+	
+	[self write];
+	
+	[self.state.pendingChanges addEntriesFromDictionary:pendingChanges];
+}
+
 #pragma mark - LightState write through
 
 + (NSSet *)keyPathsForValuesAffectingColor

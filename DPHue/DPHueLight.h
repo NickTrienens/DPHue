@@ -92,4 +92,7 @@
 - (void)flashRepeatedly;
 - (void)stopFlashing;
 */
+
+- (void)alert;
+
 @end
