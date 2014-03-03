@@ -97,8 +97,10 @@
             changedProperty = [object valueForKey:keyPath];
         }
         
+		/*
         if ([change[NSKeyValueChangeNewKey] isEqual:change[NSKeyValueChangeOldKey]])
             return;
+		 */
         
         [changedObject.pendingChanges setObject:changedProperty forKey:[[self class] propertyKeyToJSONKeyDictionary][keyPath]];
         
