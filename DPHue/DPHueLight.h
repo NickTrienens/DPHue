@@ -93,6 +93,7 @@
 - (void)stopFlashing;
 */
 
+- (void)updateWithSuccess:(void (^)(BOOL result))cb;
 - (void)alert;
 
 @end

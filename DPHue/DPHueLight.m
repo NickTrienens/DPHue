@@ -145,6 +145,24 @@
 	[self.state.pendingChanges addEntriesFromDictionary:pendingChanges];
 }
 
+- (void)updateWithSuccess:(void (^)(BOOL result))cb
+{
+	NSMutableURLRequest *req = [[NSMutableURLRequest alloc] initWithURL:self.URL];
+	DPJSONConnection *conn = [[DPJSONConnection alloc] initWithRequest:req];
+	conn.jsonRootObject = self;
+	
+	if (cb) {
+		conn.completionBlock = ^(id light, NSError *err) {
+			if (!err) {
+				cb(YES);
+			} else {
+				cb(NO);
+			}
+		};
+	}
+	[conn start];
+}
+
 #pragma mark - LightState write through
 
 + (NSSet *)keyPathsForValuesAffectingColor
