@@ -57,6 +57,7 @@
         return;
     if (self.light.transitionTime) {
         self.pendingChanges[@"transitiontime"] = self.light.transitionTime;
+		self.light.transitionTime = nil;
     }
     [super write];
 }
