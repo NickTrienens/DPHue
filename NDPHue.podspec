@@ -1,14 +1,16 @@
 Pod::Spec.new do |s|
-  s.name         = "DPHue"
-  s.version      = "0.0.1"
+  s.name         = "NDPHue"
+  s.version      = "0.0.2"
   s.summary      = "Library for interacting with Philips Hue lighting systems."
-  s.homepage     = "https://github.com/danparsons/DPHue"
+  s.homepage     = "https://github.com/NickTrienens/mypodspec.git"
   s.license      = "public domain"
   s.author       = { "Dan Parsons" => "dparsons@nyip.net" }
-  s.source       = { :git => "https://github.com/danparsons/DPHue.git", :commit => "ed8bad3bdc49e53b01ad37e7b24e13e3bde193b1" }
+  s.source       = { :git => "https://github.com/NickTrienens/DPHue", :commit => "29afeba56ba0ec202d9232ff55a127a359a206de" }
   s.source_files = 'DPHue/*.{h,m}'
   s.requires_arc = true
-  s.dependency 'CocoaAsyncSocket', '~> 0.0.1'
+
+  s.dependency 'CocoaAsyncSocket', '~> 7.4.1'
+
   s.osx.deployment_target = '10.7'
   s.ios.deployment_target = '5.0'
 end
